@@ -2,6 +2,8 @@ import { useRef, useState, useEffect } from 'react';
 import { IRefPhaserGame, PhaserGame } from './PhaserGame';
 import { EventBus } from './game/EventBus';
 import { PredictionUI } from './PredictionUI';
+import { WalletConnect } from './components/WalletConnect';
+import { useWallet } from './context/WalletProvider';
 
 function App() {
     // References to the PhaserGame component (game and scene are exposed)
@@ -9,6 +11,8 @@ function App() {
     const [roundInfo, setRoundInfo] = useState<{ winner: string | null, scoreA: number, scoreB: number } | null>(null);
     const [userPrediction, setUserPrediction] = useState<string | null>(null);
     const [predictionResult, setPredictionResult] = useState<string | null>(null);
+    const [walletAddress, setWalletAddress] = useState<string | null>(null);
+    const { isConnected } = useWallet();
     
     useEffect(() => {
         // Handler for round end event from the game
@@ -43,11 +47,17 @@ function App() {
         // Emit event to notify game that prediction is made
         EventBus.emit('prediction-made', { prediction });
     };
+    
+    const handleWalletConnected = (address: string) => {
+        setWalletAddress(address);
+        console.log('Wallet connected:', address);
+    };
 
     return (
         <div id="app">
             <header>
                 <h1>🐔 Chicken Egg-Catching Game 🥚</h1>
+                <WalletConnect onWalletConnected={handleWalletConnected} />
             </header>
             <main>
                 <div className="game-container">
@@ -55,6 +65,12 @@ function App() {
                     
                     <PredictionUI onPredictionMade={handlePredictionMade} />
                 </div>
+                
+                {isConnected && walletAddress && (
+                    <div className="wallet-status">
+                        <p>Playing with wallet: {walletAddress.substring(0, 6)}...{walletAddress.substring(walletAddress.length - 4)}</p>
+                    </div>
+                )}
                 
                 {roundInfo && (
                     <div className="round-results">

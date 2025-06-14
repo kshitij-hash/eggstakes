@@ -91,14 +91,16 @@ export class ChickenGame extends Scene {
     
     private createPlaceholderAudio() {
         // Create a simple sound effect for catching an egg
-        const audioContext = this.sound.context;
-        const frameCount = audioContext.sampleRate * 0.1; // 100ms duration
-        const buffer = audioContext.createBuffer(1, frameCount, audioContext.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < frameCount; i++) {
-            data[i] = Math.sin(2 * Math.PI * 440 * i / audioContext.sampleRate) * Math.exp(-i / audioContext.sampleRate * 5);
+        if (this.sound instanceof Phaser.Sound.WebAudioSoundManager) {
+            const audioContext = this.sound.context;
+            const frameCount = audioContext.sampleRate * 0.1; // 100ms duration
+            const buffer = audioContext.createBuffer(1, frameCount, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < frameCount; i++) {
+                data[i] = Math.sin(2 * Math.PI * 440 * i / audioContext.sampleRate) * Math.exp(-i / audioContext.sampleRate * 5);
+            }
+            this.cache.audio.add('catch', buffer);
         }
-        this.cache.audio.add('catch', buffer);
     }
     
     create() {
