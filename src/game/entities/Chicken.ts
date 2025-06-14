@@ -15,6 +15,8 @@ export class Chicken extends Phaser.Physics.Arcade.Sprite {
     private readonly catchLineY: number;
     private isPecking: boolean = false;
     private peckingTimer: Phaser.Time.TimerEvent | null = null;
+    private randomMoveTimer: Phaser.Time.TimerEvent | null = null;
+    private readonly randomMoveInterval: number = 2000;
 
     constructor(scene: Scene, x: number, y: number, texture: string, type: ChickenType, canvasWidth: number) {
         super(scene, x, y, texture);
@@ -36,6 +38,7 @@ export class Chicken extends Phaser.Physics.Arcade.Sprite {
         
         // Set collision with world bounds
         this.setCollideWorldBounds(true);
+        (this.body as Phaser.Physics.Arcade.Body).setBoundsRectangle(new Phaser.Geom.Rectangle(minX, 0, this.zoneWidth, scene.scale.height));
         
         // Adjust bounding box if needed
         this.setSize(this.width * 0.8, this.height * 0.8);
@@ -45,6 +48,15 @@ export class Chicken extends Phaser.Physics.Arcade.Sprite {
         
         // Listen for egg catch events
         scene.events.on('egg-caught', this.onEggCaught, this);
+
+        // Initialize random movement
+        this.setRandomTargetX();
+        this.randomMoveTimer = this.scene.time.addEvent({
+            delay: this.randomMoveInterval,
+            callback: this.setRandomTargetX,
+            callbackScope: this,
+            loop: true
+        });
     }
     
     update(eggs: Phaser.Physics.Arcade.Group): void {
@@ -53,19 +65,7 @@ export class Chicken extends Phaser.Physics.Arcade.Sprite {
             return;
         }
         
-        // Find closest egg in the chicken's zone
-        const closestEgg = this.findClosestEgg(eggs);
-        
-        if (closestEgg) {
-            this.targetX = closestEgg.x;
-            
-            // Move towards target
-            this.moveTowardsTarget();
-        } else {
-            // No eggs to catch, stop moving
-            this.setVelocityX(0);
-            this.targetX = null;
-        }
+        this.updateRandomMovement();
         
         // Add a slight bobbing motion when moving
         if (this.body && Math.abs(this.body.velocity.x) > 0) {
@@ -75,49 +75,21 @@ export class Chicken extends Phaser.Physics.Arcade.Sprite {
             this.setScale(1, 1);
         }
     }
-    
-    /**
-     * Triggered when an egg is caught
-     */
-    private onEggCaught(data: { chickenType: ChickenType, x: number, y: number }): void {
-        // Only react if this is the chicken that caught the egg
-        if (data.chickenType === this.chickenType) {
-            this.doPeckingAnimation();
+
+    private updateRandomMovement(): void {
+        if (this.targetX !== null) {
+            this.moveTowardsTarget();
+        } else {
+            // If targetX is null (e.g. at start or after reaching a target), set a new one immediately
+            this.setRandomTargetX();
         }
     }
-    
-    /**
-     * Performs a pecking animation
-     */
-    private doPeckingAnimation(): void {
-        // Set pecking state
-        this.isPecking = true;
+
+    private setRandomTargetX(): void {
+        const minXBoundary = this.chickenType === ChickenType.CHICKEN_A ? (this.width * 0.5) : this.zoneWidth + (this.width * 0.5);
+        const maxXBoundary = this.chickenType === ChickenType.CHICKEN_A ? this.zoneWidth - (this.width * 0.5) : this.canvasWidth - (this.width * 0.5);
         
-        // Stop horizontal movement
-        this.setVelocityX(0);
-        
-        // Visual pecking effect - scale down vertically and up horizontally
-        this.scene.tweens.add({
-            targets: this,
-            scaleY: 0.7,
-            scaleX: 1.3,
-            duration: 150,
-            yoyo: true,
-            onComplete: () => {
-                // Reset scale
-                this.setScale(1, 1);
-                
-                // End pecking state after a short delay
-                if (this.peckingTimer) {
-                    this.peckingTimer.destroy();
-                }
-                
-                this.peckingTimer = this.scene.time.delayedCall(200, () => {
-                    this.isPecking = false;
-                    this.peckingTimer = null;
-                });
-            }
-        });
+        this.targetX = Phaser.Math.Between(minXBoundary, maxXBoundary);
     }
     
     private findClosestEgg(eggs: Phaser.Physics.Arcade.Group): Phaser.Physics.Arcade.Sprite | null {
@@ -169,6 +141,50 @@ export class Chicken extends Phaser.Physics.Arcade.Sprite {
         this.setFlipX(direction < 0);
     }
     
+    /**
+     * Triggered when an egg is caught
+     */
+    private onEggCaught(data: { chickenType: ChickenType, x: number, y: number }): void {
+        // Only react if this is the chicken that caught the egg
+        if (data.chickenType === this.chickenType) {
+            this.doPeckingAnimation();
+        }
+    }
+    
+    /**
+     * Performs a pecking animation
+     */
+    private doPeckingAnimation(): void {
+        // Set pecking state
+        this.isPecking = true;
+        
+        // Stop horizontal movement
+        this.setVelocityX(0);
+        
+        // Visual pecking effect - scale down vertically and up horizontally
+        this.scene.tweens.add({
+            targets: this,
+            scaleY: 0.7,
+            scaleX: 1.3,
+            duration: 150,
+            yoyo: true,
+            onComplete: () => {
+                // Reset scale
+                this.setScale(1, 1);
+                
+                // End pecking state after a short delay
+                if (this.peckingTimer) {
+                    this.peckingTimer.destroy();
+                }
+                
+                this.peckingTimer = this.scene.time.delayedCall(200, () => {
+                    this.isPecking = false;
+                    this.peckingTimer = null;
+                });
+            }
+        });
+    }
+    
     getChickenType(): ChickenType {
         return this.chickenType;
     }
@@ -186,6 +202,9 @@ export class Chicken extends Phaser.Physics.Arcade.Sprite {
         // Clean up timer
         if (this.peckingTimer) {
             this.peckingTimer.destroy();
+        }
+        if (this.randomMoveTimer) {
+            this.randomMoveTimer.destroy();
         }
         
         super.destroy(fromScene);

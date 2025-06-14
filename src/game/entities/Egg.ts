@@ -63,14 +63,22 @@ export class Egg extends Phaser.Physics.Arcade.Sprite {
     }
     
     update(): void {
+        // If the scene doesn't exist or the egg is already destroyed, do nothing.
+        if (!this.scene || !this.active) {
+            return;
+        }
+
         // Check if egg has fallen off-screen
         if (this.y > this.scene.cameras.main.height + 50) {
             this.destroy();
+            return; // Exit early after destroying
         }
         
-        // Apply a slight wobble effect
-        const wobbleAmount = Math.sin(this.scene.time.now / 100) * 0.5;
-        this.setScale(0.8 - wobbleAmount * 0.05, 0.8 + wobbleAmount * 0.05);
+        // Apply a slight wobble effect only if scene and scene.time are available
+        if (this.scene && this.scene.time) {
+            const wobbleAmount = Math.sin(this.scene.time.now / 100) * 0.5;
+            this.setScale(0.8 - wobbleAmount * 0.05, 0.8 + wobbleAmount * 0.05);
+        }
     }
     
     getChickenType(): ChickenType {
