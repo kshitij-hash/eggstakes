@@ -32,6 +32,7 @@ export class ChickenGame extends Scene {
     preload() {
         // Create placeholder graphics programmatically
         this.createPlaceholderGraphics();
+        this.createPlaceholderAudio();
     }
     
     /**
@@ -86,6 +87,18 @@ export class ChickenGame extends Scene {
         dividerGraphics.lineStyle(2, 0x000000); // Black border
         dividerGraphics.strokeRect(0, 0, 10, this.canvasHeight);
         dividerGraphics.generateTexture('divider', 10, this.canvasHeight);
+    }
+    
+    private createPlaceholderAudio() {
+        // Create a simple sound effect for catching an egg
+        const audioContext = this.sound.context;
+        const frameCount = audioContext.sampleRate * 0.1; // 100ms duration
+        const buffer = audioContext.createBuffer(1, frameCount, audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < frameCount; i++) {
+            data[i] = Math.sin(2 * Math.PI * 440 * i / audioContext.sampleRate) * Math.exp(-i / audioContext.sampleRate * 5);
+        }
+        this.cache.audio.add('catch', buffer);
     }
     
     create() {

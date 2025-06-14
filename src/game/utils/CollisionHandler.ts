@@ -35,6 +35,9 @@ export class CollisionHandler {
     }
     
     private eggCaught(egg: Egg, chickenType: ChickenType): void {
+        // Play catch sound
+        this.scene.sound.play('catch');
+
         // Update score based on which chicken caught the egg
         if (chickenType === ChickenType.CHICKEN_A) {
             this.scoreA++;
@@ -48,14 +51,8 @@ export class CollisionHandler {
             scoreA: this.scoreA,
             scoreB: this.scoreB
         });
-        
-        // Play catch sound
-        this.scene.sound.play('catch');
-        
-        // Visual feedback (particle effect)
-        this.createCatchEffect(egg.x, egg.y);
-        
-        // Destroy the caught egg
+
+        // Destroy the egg
         egg.destroy();
     }
     
