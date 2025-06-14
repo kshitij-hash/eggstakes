@@ -1,0 +1,149 @@
+.prediction-ui {
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    padding: 20px;
+    color: white;
+    max-width: 500px;
+    margin: 20px auto;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 10;
+}
+
+.prediction-ui h2 {
+    margin-top: 0;
+    color: #FFD700; /* Gold */
+    font-size: 24px;
+}
+
+.prediction-ui p {
+    margin-bottom: 20px;
+    font-size: 18px;
+}
+
+.prediction-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.prediction-button {
+    background-color: #444;
+    color: white;
+    border: 2px solid #666;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex: 1;
+    margin: 0 5px;
+}
+
+.prediction-button:hover:not(:disabled) {
+    background-color: #555;
+    transform: translateY(-2px);
+}
+
+.prediction-button.selected {
+    background-color: #4CAF50; /* Green */
+    border-color: #2E7D32;
+}
+
+.prediction-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.lock-button {
+    background-color: #f44336; /* Red */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.lock-button:hover:not(:disabled) {
+    background-color: #d32f2f;
+}
+
+.lock-button:disabled {
+    background-color: #ffcdd2;
+    color: #b71c1c;
+    cursor: not-allowed;
+}
+
+/* Round results styling */
+.round-results {
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    padding: 20px;
+    color: white;
+    max-width: 500px;
+    margin: 20px auto;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.round-results h2 {
+    color: #FFD700; /* Gold */
+    margin-top: 0;
+}
+
+.prediction-result {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.prediction-result.correct {
+    background-color: rgba(76, 175, 80, 0.3); /* Green with transparency */
+    border: 1px solid #4CAF50;
+}
+
+.prediction-result.incorrect {
+    background-color: rgba(244, 67, 54, 0.3); /* Red with transparency */
+    border: 1px solid #f44336;
+}
+
+/* Game container styling */
+.game-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* App container styling */
+#app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    color: #333;
+    font-size: 32px;
+}
+
+@media (max-width: 768px) {
+    .prediction-buttons {
+        flex-direction: column;
+    }
+    
+    .prediction-button {
+        margin: 5px 0;
+    }
+}

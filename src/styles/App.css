@@ -1,0 +1,51 @@
+/* Game App Styles */
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: 'Arial', sans-serif;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  color: #333;
+  font-size: 2rem;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#game-container {
+  margin-bottom: 20px;
+  border: 4px solid #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.round-results {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.round-results h2 {
+  color: #e63946;
+  margin-bottom: 10px;
+}
+
+.round-results p {
+  font-size: 1.2rem;
+  color: #333;
+}
