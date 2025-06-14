@@ -68,7 +68,7 @@ export class Chicken extends Phaser.Physics.Arcade.Sprite {
         }
         
         // Add a slight bobbing motion when moving
-        if (Math.abs(this.body.velocity.x) > 0) {
+        if (this.body && Math.abs(this.body.velocity.x) > 0) {
             const bobAmount = Math.sin(this.scene.time.now / 150) * 0.05;
             this.setScale(1 + bobAmount, 1 - bobAmount);
         } else {
@@ -177,9 +177,11 @@ export class Chicken extends Phaser.Physics.Arcade.Sprite {
         return this.catchLineY;
     }
     
-    destroy(fromScene?: boolean): void {
+    destroy(fromScene?: boolean | undefined): void {
         // Clean up event listeners
-        this.scene.events.off('egg-caught', this.onEggCaught, this);
+        if (this.scene) {
+            this.scene.events.off('egg-caught', this.onEggCaught, this);
+        }
         
         // Clean up timer
         if (this.peckingTimer) {

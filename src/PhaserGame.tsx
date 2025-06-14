@@ -1,84 +1,83 @@
-import { forwardRef, useEffect, useLayoutEffect, useRef } from 'react';
-import StartGame, { handleResize } from './game/main';
-import { EventBus } from './game/EventBus';
+import { forwardRef, useEffect, useLayoutEffect, useRef } from "react";
+import StartGame, { handleResize } from "./game/main";
+import { EventBus } from "./game/EventBus";
 
-export interface IRefPhaserGame
-{
+export interface IRefPhaserGame {
     game: Phaser.Game | null;
     scene: Phaser.Scene | null;
 }
 
-interface IProps
-{
-    currentActiveScene?: (scene_instance: Phaser.Scene) => void
+interface IProps {
+    currentActiveScene?: (scene_instance: Phaser.Scene) => void;
 }
 
-export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame({ currentActiveScene }, ref)
-{
-    const game = useRef<Phaser.Game | null>(null!);
+export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(
+    function PhaserGame({ currentActiveScene }, ref) {
+        const game = useRef<Phaser.Game | null>(null!);
 
-    useLayoutEffect(() =>
-    {
-        if (game.current === null)
-        {
-            game.current = StartGame("game-container");
+        useLayoutEffect(() => {
+            if (game.current === null) {
+                game.current = StartGame("game-container");
 
-            if (typeof ref === 'function')
-            {
-                ref({ game: game.current, scene: null });
-            } else if (ref)
-            {
-                ref.current = { game: game.current, scene: null };
-            }
-            
-            // Initial resize
-            handleResize(game.current);
-            
-            // Add window resize event listener
-            window.addEventListener('resize', () => handleResize(game.current));
-        }
+                if (typeof ref === "function") {
+                    ref({ game: game.current, scene: null });
+                } else if (ref) {
+                    ref.current = { game: game.current, scene: null };
+                }
 
-        return () =>
-        {
-            // Remove resize event listener
-            window.removeEventListener('resize', () => handleResize(game.current));
-            
-            if (game.current)
-            {
-                game.current.destroy(true);
-                if (game.current !== null)
-                {
-                    game.current = null;
+                // Initial resize to ensure proper dimensions
+                if (game.current) {
+                    handleResize(game.current);
                 }
             }
-        }
-    }, [ref]);
 
-    useEffect(() =>
-    {
-        EventBus.on('current-scene-ready', (scene_instance: Phaser.Scene) =>
-        {
-            if (currentActiveScene && typeof currentActiveScene === 'function')
-            {
-                currentActiveScene(scene_instance);
-            }
+            return () => {
+                if (game.current) {
+                    game.current.destroy(true);
+                    if (game.current !== null) {
+                        game.current = null;
+                    }
+                }
+            };
+        }, [ref]);
 
-            if (typeof ref === 'function')
-            {
-                ref({ game: game.current, scene: scene_instance });
-            } else if (ref)
-            {
-                ref.current = { game: game.current, scene: scene_instance };
-            }
-        });
-        
-        return () =>
-        {
-            EventBus.removeListener('current-scene-ready');
-        }
-    }, [currentActiveScene, ref]);
+        useEffect(() => {
+            EventBus.on(
+                "current-scene-ready",
+                (scene_instance: Phaser.Scene) => {
+                    if (
+                        currentActiveScene &&
+                        typeof currentActiveScene === "function"
+                    ) {
+                        currentActiveScene(scene_instance);
+                    }
 
-    return (
-        <div id="game-container" style={{ width: '100%', height: '100%', margin: '0 auto' }}></div>
-    );
-});
+                    if (typeof ref === "function") {
+                        ref({ game: game.current, scene: scene_instance });
+                    } else if (ref) {
+                        ref.current = {
+                            game: game.current,
+                            scene: scene_instance,
+                        };
+                    }
+                }
+            );
+
+            // Add window resize event listener
+            const handleWindowResize = () => {
+                if (game.current) {
+                    handleResize(game.current);
+                }
+            };
+
+            window.addEventListener("resize", handleWindowResize);
+
+            return () => {
+                EventBus.removeListener("current-scene-ready");
+                window.removeEventListener("resize", handleWindowResize);
+            };
+        }, [currentActiveScene, ref]);
+
+        return <div id="game-container"></div>;
+    }
+);

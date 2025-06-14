@@ -6,83 +6,86 @@ import { EventBus } from '../EventBus';
 
 export class ChickenGame extends Scene {
     // Game entities
-    private chickenA: Chicken;
-    private chickenB: Chicken;
-    private eggSpawner: EggSpawner;
-    private collisionHandler: CollisionHandler;
+    private chickenA!: Chicken;
+    private chickenB!: Chicken;
+    private eggSpawner!: EggSpawner;
+    private collisionHandler!: CollisionHandler;
     
     // UI elements
-    private scoreTextA: Phaser.GameObjects.Text;
-    private scoreTextB: Phaser.GameObjects.Text;
-    private timerText: Phaser.GameObjects.Text;
-    private resultText: Phaser.GameObjects.Text;
+    private scoreTextA!: Phaser.GameObjects.Text;
+    private scoreTextB!: Phaser.GameObjects.Text;
+    private timerText!: Phaser.GameObjects.Text;
+    private resultText!: Phaser.GameObjects.Text;
     
     // Game config
     private readonly roundDuration: number = 30000; // 30 seconds
     private readonly canvasWidth: number = 800;
     private readonly canvasHeight: number = 600;
-    private roundTimer: Phaser.Time.TimerEvent;
+    private roundTimer!: Phaser.Time.TimerEvent;
     private timeRemaining: number = 30;
     private isRoundActive: boolean = false;
     
     constructor() {
         super('ChickenGame');
-        // Properties will be initialized in create() method
     }
     
     preload() {
-        this.load.setPath('assets');
-        
-        // Load images
-        this.load.image('background', 'background.png');
-        this.load.image('chickenA', 'chicken_white.png');
-        this.load.image('chickenB', 'chicken_brown.png');
-        this.load.image('egg', 'egg.png');
-        this.load.image('particle', 'particle.png');
-        this.load.image('divider', 'divider.png');
-        
-        // Create programmatic sounds since we don't have audio files
-        this.createSoundEffects();
+        // Create placeholder graphics programmatically
+        this.createPlaceholderGraphics();
     }
     
-    // The createPlaceholderGraphics method has been removed as it's no longer needed
-    // We're now using actual image assets loaded in the preload method
-    
     /**
-     * Creates programmatic sound effects using the Web Audio API
+     * Creates placeholder graphics for the game assets
+     * This allows us to run the game without external image assets
      */
-    private createSoundEffects() {
-        // Create catch sound (short high-pitched blip)
-        const catchSound = this.sound.add('catch');
-        if (!catchSound.source) {
-            const ctx = this.sound.context;
-            const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            
-            for (let i = 0; i < buffer.length; i++) {
-                // Create a short "blip" sound
-                const t = i / buffer.length;
-                data[i] = Math.sin(Math.PI * 10 * t) * (1 - t);
-            }
-            
-            this.cache.audio.add('catch', buffer);
-        }
+    private createPlaceholderGraphics() {
+        // Create background
+        const bgGraphics = this.make.graphics({x: 0, y: 0});
+        bgGraphics.fillStyle(0x87CEEB); // Sky blue
+        bgGraphics.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+        bgGraphics.fillStyle(0x8FBC8F); // Dark sea green for ground
+        bgGraphics.fillRect(0, this.canvasHeight - 50, this.canvasWidth, 50);
+        bgGraphics.generateTexture('background', this.canvasWidth, this.canvasHeight);
         
-        // Create round-end sound (longer celebratory sound)
-        const roundEndSound = this.sound.add('round-end');
-        if (!roundEndSound.source) {
-            const ctx = this.sound.context;
-            const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            
-            for (let i = 0; i < buffer.length; i++) {
-                // Create a celebratory sound
-                const t = i / buffer.length;
-                data[i] = Math.sin(Math.PI * 5 * t) * Math.sin(Math.PI * 20 * t) * (1 - 0.8 * t);
-            }
-            
-            this.cache.audio.add('round-end', buffer);
-        }
+        // Create chicken A (white)
+        const chickenAGraphics = this.make.graphics({x: 0, y: 0});
+        chickenAGraphics.fillStyle(0xFFFFFF); // White
+        chickenAGraphics.fillCircle(25, 25, 20);
+        chickenAGraphics.fillStyle(0xFF0000); // Red for comb
+        chickenAGraphics.fillTriangle(25, 0, 35, 10, 15, 10);
+        chickenAGraphics.fillStyle(0xFF6A00); // Orange for beak
+        chickenAGraphics.fillTriangle(25, 25, 45, 25, 25, 35);
+        chickenAGraphics.generateTexture('chickenA', 50, 50);
+        
+        // Create chicken B (brown)
+        const chickenBGraphics = this.make.graphics({x: 0, y: 0});
+        chickenBGraphics.fillStyle(0xA52A2A); // Brown
+        chickenBGraphics.fillCircle(25, 25, 20);
+        chickenBGraphics.fillStyle(0xFF0000); // Red for comb
+        chickenBGraphics.fillTriangle(25, 0, 35, 10, 15, 10);
+        chickenBGraphics.fillStyle(0xFF6A00); // Orange for beak
+        chickenBGraphics.fillTriangle(25, 25, 45, 25, 25, 35);
+        chickenBGraphics.generateTexture('chickenB', 50, 50);
+        
+        // Create egg
+        const eggGraphics = this.make.graphics({x: 0, y: 0});
+        eggGraphics.fillStyle(0xFFFFFF); // White
+        eggGraphics.fillCircle(15, 15, 15);
+        eggGraphics.generateTexture('egg', 30, 30);
+        
+        // Create particle
+        const particleGraphics = this.make.graphics({x: 0, y: 0});
+        particleGraphics.fillStyle(0xFFD700); // Gold
+        particleGraphics.fillCircle(5, 5, 5);
+        particleGraphics.generateTexture('particle', 10, 10);
+        
+        // Create divider
+        const dividerGraphics = this.make.graphics({x: 0, y: 0});
+        dividerGraphics.fillStyle(0xFFFFFF); // White
+        dividerGraphics.fillRect(0, 0, 10, this.canvasHeight);
+        dividerGraphics.lineStyle(2, 0x000000); // Black border
+        dividerGraphics.strokeRect(0, 0, 10, this.canvasHeight);
+        dividerGraphics.generateTexture('divider', 10, this.canvasHeight);
     }
     
     create() {
@@ -225,9 +228,6 @@ export class ChickenGame extends Scene {
             callbackScope: this,
             repeat: this.timeRemaining - 1
         });
-        
-        // Emit round-start event for UI components
-        EventBus.emit('round-start');
     }
     
     private updateTimer(): void {
@@ -272,8 +272,8 @@ export class ChickenGame extends Scene {
         this.resultText.setText(resultMessage);
         this.resultText.setVisible(true);
         
-        // Play round-end sound
-        this.sound.play('round-end');
+        // Optional: Play sound
+        // this.sound.play('round-end');
         
         // Emit round end event
         EventBus.emit('round-end', {
