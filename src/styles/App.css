@@ -1,93 +1,110 @@
 /* Game App Styles */
-#app {
+header {
+    text-align: center;
+    margin-bottom: 30px; /* Increased margin */
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 20px;
-    font-family: "Arial", sans-serif;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-header {
-    text-align: center;
-    margin-bottom: 20px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
+    gap: 15px; /* Adjusted gap */
 }
 
 header h1 {
-    color: #333;
-    font-size: 2rem;
+    color: #E0E0E0; /* Light color for dark theme */
+    font-size: 2.2rem; /* Slightly larger */
+    font-weight: 600;
 }
 
 main {
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%; /* Ensure main takes full width */
 }
 
-#game-container {
+.game-container { /* Renamed from #game-container for consistency */
     width: 800px; /* Match game config width */
     height: 600px; /* Match game config height */
-    margin-bottom: 20px;
-    border: 4px solid #333;
-    border-radius: 4px;
+    margin-bottom: 25px;
+    border: 2px solid #444; /* Darker border */
+    border-radius: 8px; /* Smoother radius */
     overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .round-results {
-    margin-top: 20px;
-    padding: 15px;
-    background-color: rgba(255, 255, 255, 0.8);
+    margin-top: 25px;
+    padding: 20px;
+    background-color: rgba(40, 40, 40, 0.85); /* Dark semi-transparent background */
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
     text-align: center;
+    color: #E0E0E0; /* Light text */
+    width: 100%;
+    max-width: 500px; /* Consistent with PredictionUI */
 }
 
 .round-results h2 {
-    color: #e63946;
-    margin-bottom: 10px;
+    color: #FFD700; /* Gold, consistent with PredictionUI */
+    margin-bottom: 12px;
+    font-size: 1.8rem;
 }
 
 .round-results p {
-    font-size: 1.2rem;
-    color: #333;
+    font-size: 1.1rem; /* Adjusted size */
+    color: #CCCCCC; /* Lighter grey */
 }
 
 
 /* Wallet Status Styles */
 .wallet-status {
-  margin-top: 15px;
-  padding: 10px 15px;
-  background-color: #f0f9ff;
-  border-left: 4px solid #3b82f6;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  color: #1e40af;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 400px;
+    margin-top: 20px;
+    padding: 12px 18px;
+    background-color: #2a2a2a; /* Dark background */
+    border-left: 4px solid #0ec3c9; /* Accent color from globals.css button hover */
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #B0B0B0; /* Light grey text */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 450px; /* Slightly wider */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 .wallet-status p {
-  margin: 0;
-  font-family: monospace;
+    margin: 0;
+    font-family: 'Inter', monospace; /* Use Inter, fallback to monospace */
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  header h1 {
-    font-size: 1.5rem;
-  }
-  
-  .wallet-status {
-    font-size: 0.8rem;
-  }
+    header h1 {
+        font-size: 1.8rem; /* Adjusted for smaller screens */
+    }
+
+    .game-container {
+        width: 95%;
+        height: auto; /* Adjust height for responsiveness */
+        max-width: 500px; /* Max width for smaller game view */
+    }
+
+    .round-results {
+        padding: 15px;
+    }
+
+    .round-results h2 {
+        font-size: 1.5rem;
+    }
+
+    .round-results p {
+        font-size: 1rem;
+    }
+    
+    .wallet-status {
+        font-size: 0.85rem;
+        padding: 10px 15px;
+        max-width: 90%;
+    }
 }

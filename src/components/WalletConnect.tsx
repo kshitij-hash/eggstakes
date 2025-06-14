@@ -56,7 +56,8 @@ const styles = {
     backgroundColor: '#e0f2fe',
     padding: '8px 16px',
     borderRadius: '20px',
-    border: '1px solid #bae6fd'
+    border: '1px solid #bae6fd',
+    color: 'black',
   },
   switchNetworkButton: {
     backgroundColor: '#FF9900',
