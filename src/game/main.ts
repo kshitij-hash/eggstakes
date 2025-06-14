@@ -30,24 +30,4 @@ const StartGame = (parent: string) => {
     return new Game({ ...config, parent });
 }
 
-// Handle window resize events
-const handleResize = (game: Game) => {
-    if (!game) return;
-    
-    const canvas = game.canvas;
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-    const windowRatio = windowWidth / windowHeight;
-    const gameRatio = game.config.width as number / (game.config.height as number);
-    
-    if (windowRatio < gameRatio) {
-        canvas.style.width = windowWidth + 'px';
-        canvas.style.height = (windowWidth / gameRatio) + 'px';
-    } else {
-        canvas.style.width = (windowHeight * gameRatio) + 'px';
-        canvas.style.height = windowHeight + 'px';
-    }
-};
-
-export { handleResize };
 export default StartGame;

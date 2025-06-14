@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useLayoutEffect, useRef } from "react";
-import StartGame, { handleResize } from "./game/main";
+import StartGame from "./game/main";
 import { EventBus } from "./game/EventBus";
 
 export interface IRefPhaserGame {
@@ -23,11 +23,6 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(
                     ref({ game: game.current, scene: null });
                 } else if (ref) {
                     ref.current = { game: game.current, scene: null };
-                }
-
-                // Initial resize to ensure proper dimensions
-                if (game.current) {
-                    handleResize(game.current);
                 }
             }
 
@@ -63,18 +58,8 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(
                 }
             );
 
-            // Add window resize event listener
-            const handleWindowResize = () => {
-                if (game.current) {
-                    handleResize(game.current);
-                }
-            };
-
-            window.addEventListener("resize", handleWindowResize);
-
             return () => {
                 EventBus.removeListener("current-scene-ready");
-                window.removeEventListener("resize", handleWindowResize);
             };
         }, [currentActiveScene, ref]);
 
