@@ -3,6 +3,22 @@ import { Chicken, ChickenType } from '../entities/Chicken';
 import { EggSpawner } from '../utils/Spawner';
 import { CollisionHandler } from '../utils/CollisionHandler';
 import { EventBus } from '../EventBus';
+import { contractService, Hen } from '../../services/ContractService'; // Added import, Hen enum
+
+// Enum for game phases
+enum GamePhase {
+    STARTING_ROUND,
+    GAMEPLAY,
+    BETTING,
+    ENDING_ROUND,
+    SHOWING_RESULTS,
+    RESTARTING
+}
+
+// Game timing constants
+const GAME_DURATION = 60000; // 1 minute
+const BET_DURATION = 20000;  // 20 seconds
+const RESULTS_DURATION = 60000; // 1 minute
 
 export class ChickenGame extends Scene {
     // Game entities
@@ -10,35 +26,31 @@ export class ChickenGame extends Scene {
     private chickenB!: Chicken;
     private eggSpawner!: EggSpawner;
     private collisionHandler!: CollisionHandler;
-    
+
     // UI elements
     private scoreTextA!: Phaser.GameObjects.Text;
     private scoreTextB!: Phaser.GameObjects.Text;
     private timerText!: Phaser.GameObjects.Text;
+    private statusText!: Phaser.GameObjects.Text; // New UI element for status
     private resultText!: Phaser.GameObjects.Text;
-    
-    // Game config
-    private readonly roundDuration: number = 30000; // 30 seconds
+
+    // Game config & state
     private readonly canvasWidth: number = 800;
     private readonly canvasHeight: number = 600;
-    private roundTimer!: Phaser.Time.TimerEvent;
-    private timeRemaining: number = 30;
-    private isRoundActive: boolean = false;
-    
+    private currentPhase!: GamePhase;
+    private phaseTimer!: Phaser.Time.TimerEvent;
+    private phaseTimeRemaining: number = 0;
+    private lastWinnerData: { winner: string | null, scoreA: number, scoreB: number } | null = null;
+
     constructor() {
         super('ChickenGame');
     }
-    
+
     preload() {
-        // Create placeholder graphics programmatically
         this.createPlaceholderGraphics();
         this.createPlaceholderAudio();
     }
-    
-    /**
-     * Creates placeholder graphics for the game assets
-     * This allows us to run the game without external image assets
-     */
+
     private createPlaceholderGraphics() {
         // Create background
         const bgGraphics = this.make.graphics({x: 0, y: 0});
@@ -88,9 +100,8 @@ export class ChickenGame extends Scene {
         dividerGraphics.strokeRect(0, 0, 10, this.canvasHeight);
         dividerGraphics.generateTexture('divider', 10, this.canvasHeight);
     }
-    
+
     private createPlaceholderAudio() {
-        // Create a simple sound effect for catching an egg
         if (this.sound instanceof Phaser.Sound.WebAudioSoundManager) {
             const audioContext = this.sound.context;
             const frameCount = audioContext.sampleRate * 0.1; // 100ms duration
@@ -102,66 +113,47 @@ export class ChickenGame extends Scene {
             this.cache.audio.add('catch', buffer);
         }
     }
-    
+
     create() {
-        // Set world bounds
         this.physics.world.setBounds(0, 0, this.canvasWidth, this.canvasHeight);
-        
-        // Add background
         this.add.image(this.canvasWidth / 2, this.canvasHeight / 2, 'background');
-        
-        // Add divider
         const divider = this.add.image(this.canvasWidth / 2, this.canvasHeight / 2, 'divider');
         divider.setDisplaySize(10, this.canvasHeight);
-        
-        // Create chickens
+
         this.createChickens();
-        
-        // Set up egg spawner
         this.eggSpawner = new EggSpawner(this, this.canvasWidth);
-        
-        // Set up collision handler
         this.collisionHandler = new CollisionHandler(this);
         this.collisionHandler.setupCollisions(
-            this.chickenA, 
-            this.chickenB, 
+            this.chickenA,
+            this.chickenB,
             this.eggSpawner.getEggGroup()
         );
-        
-        // Create UI
+
         this.createUI();
-        
-        // Set up event listeners
         this.setupEventListeners();
-        
-        // Start the round
-        this.startRound();
-        
-        // Notify React component that scene is ready
+
+        this.moveToNextPhase(GamePhase.STARTING_ROUND);
+
         EventBus.emit('current-scene-ready', this);
     }
-    
+
     update() {
-        // Update chickens AI
-        if (this.isRoundActive) {
+        if (this.currentPhase === GamePhase.GAMEPLAY) {
             this.chickenA.update(this.eggSpawner.getEggGroup());
             this.chickenB.update(this.eggSpawner.getEggGroup());
         }
     }
-    
+
     private createChickens(): void {
-        // Create chicken A (left side)
         const chickenAX = this.canvasWidth / 4;
         const chickenY = this.canvasHeight - 70;
         this.chickenA = new Chicken(this, chickenAX, chickenY, 'chickenA', ChickenType.CHICKEN_A, this.canvasWidth);
-        
-        // Create chicken B (right side)
+
         const chickenBX = (this.canvasWidth / 4) * 3;
         this.chickenB = new Chicken(this, chickenBX, chickenY, 'chickenB', ChickenType.CHICKEN_B, this.canvasWidth);
     }
-    
+
     private createUI(): void {
-        // Create score texts
         const textStyle = {
             fontFamily: 'Arial',
             fontSize: '24px',
@@ -169,51 +161,27 @@ export class ChickenGame extends Scene {
             stroke: '#000000',
             strokeThickness: 4,
         };
+
+        this.scoreTextA = this.add.text(this.canvasWidth / 4, 30, 'Score: 0', textStyle).setOrigin(0.5);
+        this.scoreTextB = this.add.text((this.canvasWidth / 4) * 3, 30, 'Score: 0', textStyle).setOrigin(0.5);
+
+        // Status text to show current game phase information
+        this.statusText = this.add.text(this.canvasWidth / 2, 30, '', textStyle).setOrigin(0.5);
         
-        this.scoreTextA = this.add.text(
-            this.canvasWidth / 4,
-            30,
-            'Score: 0',
-            textStyle
-        ).setOrigin(0.5);
-        
-        this.scoreTextB = this.add.text(
-            (this.canvasWidth / 4) * 3,
-            30,
-            'Score: 0',
-            textStyle
-        ).setOrigin(0.5);
-        
-        // Create timer text
-        this.timerText = this.add.text(
-            this.canvasWidth / 2,
-            30,
-            `Time: ${this.timeRemaining}s`,
-            textStyle
-        ).setOrigin(0.5);
-        
-        // Create result text (hidden initially)
+        // Timer text, positioned below status text
+        this.timerText = this.add.text(this.canvasWidth / 2, 60, '', textStyle).setOrigin(0.5);
+
         this.resultText = this.add.text(
             this.canvasWidth / 2,
             this.canvasHeight / 2,
             '',
-            {
-                fontFamily: 'Arial',
-                fontSize: '48px',
-                color: '#ffffff',
-                stroke: '#000000',
-                strokeThickness: 6,
-                align: 'center'
-            }
+            { ...textStyle, fontSize: '48px', strokeThickness: 6, align: 'center' }
         ).setOrigin(0.5).setVisible(false);
     }
-    
+
     private setupEventListeners(): void {
-        // Listen for score updates
         this.events.on('score-update', (data: { chickenType: ChickenType, scoreA: number, scoreB: number }) => {
             this.updateScoreDisplay(data.scoreA, data.scoreB);
-            
-            // Forward the event to React if needed
             EventBus.emit('score-update', {
                 chickenType: data.chickenType,
                 scoreA: data.scoreA,
@@ -221,96 +189,162 @@ export class ChickenGame extends Scene {
             });
         });
     }
-    
-    private startRound(): void {
-        this.isRoundActive = true;
-        this.timeRemaining = this.roundDuration / 1000;
-        
-        // Reset scores
-        this.collisionHandler.resetScores();
-        this.updateScoreDisplay(0, 0);
-        
-        // Reset UI
+
+    private async moveToNextPhase(nextPhase?: GamePhase): Promise<void> {
+        if (nextPhase !== undefined) {
+            this.currentPhase = nextPhase;
+        }
+
+        if (this.phaseTimer) {
+            this.phaseTimer.destroy();
+        }
+        this.timerText.setText('');
         this.resultText.setVisible(false);
-        
-        // Start egg spawner
-        this.eggSpawner.start();
-        
-        // Start round timer
-        this.roundTimer = this.time.addEvent({
-            delay: 1000,
-            callback: this.updateTimer,
-            callbackScope: this,
-            repeat: this.timeRemaining - 1
-        });
-    }
-    
-    private updateTimer(): void {
-        this.timeRemaining--;
-        this.timerText.setText(`Time: ${this.timeRemaining}s`);
-        
-        if (this.timeRemaining <= 0) {
-            this.endRound();
+
+        console.log(`ChickenGame: Moving to phase: ${GamePhase[this.currentPhase]}`);
+
+        switch (this.currentPhase) {
+            case GamePhase.STARTING_ROUND:
+                this.statusText.setText('Starting New Round...');
+                try {
+                    const roundDurationForContract = (GAME_DURATION + BET_DURATION) / 1000;
+                    console.log(`ChickenGame: Calling contractService.startRound() with duration: ${roundDurationForContract}s`);
+                    await contractService.startRound(roundDurationForContract);
+                    console.log('ChickenGame: contractService.startRound() successful');
+                    this.moveToNextPhase(GamePhase.GAMEPLAY);
+                } catch (error) {
+                    console.error('ChickenGame: Error starting round:', error);
+                    this.statusText.setText('Error starting round. Retrying in 5s...');
+                    this.time.delayedCall(5000, () => this.moveToNextPhase(GamePhase.STARTING_ROUND));
+                }
+                break;
+
+            case GamePhase.GAMEPLAY:
+                this.statusText.setText('Game in Progress!');
+                this.phaseTimeRemaining = GAME_DURATION / 1000;
+                this.timerText.setText(`Time: ${this.phaseTimeRemaining}s`);
+                this.collisionHandler.resetScores();
+                this.updateScoreDisplay(0, 0);
+                this.eggSpawner.start();
+                this.phaseTimer = this.time.addEvent({
+                    delay: 1000,
+                    callback: this.updatePhaseTimer,
+                    callbackScope: this,
+                    loop: true
+                });
+                break;
+
+            case GamePhase.BETTING:
+                this.statusText.setText('Place Your Bets!');
+                this.phaseTimeRemaining = BET_DURATION / 1000;
+                this.timerText.setText(`Bet Time: ${this.phaseTimeRemaining}s`);
+                this.eggSpawner.stop();
+                EventBus.emit('betting-phase-started');
+                this.phaseTimer = this.time.addEvent({
+                    delay: 1000,
+                    callback: this.updatePhaseTimer,
+                    callbackScope: this,
+                    loop: true
+                });
+                break;
+
+            case GamePhase.ENDING_ROUND:
+                this.statusText.setText('Ending Round...');
+                EventBus.emit('betting-phase-ended');
+                const gameWinner = this.determineAndDisplayLocalWinner(); 
+                try {
+                    let contractWinner: Hen;
+                    if (gameWinner.winner === 'A') {
+                        contractWinner = Hen.A;
+                    } else if (gameWinner.winner === 'B') {
+                        contractWinner = Hen.B;
+                    } else { // Draw or null
+                        console.warn('ChickenGame: Local game was a draw. Defaulting to Hen.A for contract endRound.');
+                        contractWinner = Hen.A; // Default to Hen.A if draw, as contract requires a winner
+                    }
+                    console.log(`ChickenGame: Calling contractService.endRound() with winner: ${Hen[contractWinner]}`);
+                    await contractService.endRound(contractWinner);
+                    console.log('ChickenGame: contractService.endRound() successful');
+                    this.moveToNextPhase(GamePhase.SHOWING_RESULTS);
+                } catch (error) {
+                    console.error('ChickenGame: Error ending round:', error);
+                    this.statusText.setText('Error ending round. Retrying in 5s...');
+                    this.time.delayedCall(5000, () => this.moveToNextPhase(GamePhase.ENDING_ROUND));
+                }
+                break;
+
+            case GamePhase.SHOWING_RESULTS:
+                this.statusText.setText('Fetching Results...');
+                this.phaseTimeRemaining = RESULTS_DURATION / 1000;
+                this.timerText.setText(`Next Game: ${this.phaseTimeRemaining}s`);
+                try {
+                    console.log('ChickenGame: Calling contractService.getPlayers()');
+                    const players = await contractService.getPlayers();
+                    console.log('ChickenGame: Players:', players);
+                    EventBus.emit('show-results', { players, winnerData: this.lastWinnerData });
+                } catch (error) {
+                    console.error('ChickenGame: Error fetching players:', error);
+                    EventBus.emit('show-results', { error: 'Failed to fetch player data', winnerData: this.lastWinnerData });
+                }
+                this.phaseTimer = this.time.addEvent({
+                    delay: 1000,
+                    callback: this.updatePhaseTimer,
+                    callbackScope: this,
+                    loop: true
+                });
+                break;
+
+            case GamePhase.RESTARTING:
+                this.statusText.setText('Preparing Next Game...');
+                this.eggSpawner.clearEggs();
+                this.time.delayedCall(2000, () => this.moveToNextPhase(GamePhase.STARTING_ROUND));
+                break;
         }
     }
-    
-    private endRound(): void {
-        this.isRoundActive = false;
-        
-        // Stop egg spawning
-        this.eggSpawner.stop();
-        
-        // Stop chickens
-        this.chickenA.setVelocity(0);
-        this.chickenB.setVelocity(0);
-        
-        // Get final scores
+
+    private updatePhaseTimer(): void {
+        this.phaseTimeRemaining--;
+        let timerPrefix = "Time: ";
+        if (this.currentPhase === GamePhase.BETTING) timerPrefix = "Bet Time: ";
+        else if (this.currentPhase === GamePhase.SHOWING_RESULTS) timerPrefix = "Next Game: ";
+        this.timerText.setText(`${timerPrefix}${this.phaseTimeRemaining}s`);
+
+        if (this.phaseTimeRemaining <= 0) {
+            if (this.phaseTimer) this.phaseTimer.destroy();
+
+            if (this.currentPhase === GamePhase.GAMEPLAY) {
+                this.moveToNextPhase(GamePhase.BETTING);
+            } else if (this.currentPhase === GamePhase.BETTING) {
+                this.moveToNextPhase(GamePhase.ENDING_ROUND);
+            } else if (this.currentPhase === GamePhase.SHOWING_RESULTS) {
+                this.moveToNextPhase(GamePhase.RESTARTING);
+            }
+        }
+    }
+
+    private determineAndDisplayLocalWinner(): { winner: string | null, scoreA: number, scoreB: number } {
         const scoreA = this.collisionHandler.getScoreA();
         const scoreB = this.collisionHandler.getScoreB();
-        
-        // Determine winner
         let resultMessage: string;
         let winner: string | null = null;
-        
+
         if (scoreA > scoreB) {
-            resultMessage = "Chicken A Wins!";
+            resultMessage = "Chicken A Wins This Match!";
             winner = "A";
         } else if (scoreB > scoreA) {
-            resultMessage = "Chicken B Wins!";
+            resultMessage = "Chicken B Wins This Match!";
             winner = "B";
         } else {
-            resultMessage = "Draw!";
+            resultMessage = "Match Draw!";
             winner = "draw";
         }
-        
-        // Display result
         this.resultText.setText(resultMessage);
         this.resultText.setVisible(true);
-        
-        // Optional: Play sound
-        // this.sound.play('round-end');
-        
-        // Emit round end event
-        EventBus.emit('round-end', {
-            winner,
-            scoreA,
-            scoreB
-        });
-        
-        // Restart after delay (for demo purposes - in production you might want user interaction)
-        this.time.delayedCall(3000, () => {
-            this.resetGame();
-        });
+        this.lastWinnerData = { winner, scoreA, scoreB };
+        EventBus.emit('local-round-end', this.lastWinnerData);
+        return this.lastWinnerData;
     }
-    
-    private resetGame(): void {
-        // Clear all eggs
-        this.eggSpawner.clearEggs();
-        
-        // Start a new round
-        this.startRound();
-    }
-    
+
     private updateScoreDisplay(scoreA: number, scoreB: number): void {
         this.scoreTextA.setText(`Score: ${scoreA}`);
         this.scoreTextB.setText(`Score: ${scoreB}`);

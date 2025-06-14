@@ -3,7 +3,9 @@ import { IRefPhaserGame, PhaserGame } from './PhaserGame';
 import { EventBus } from './game/EventBus';
 import { PredictionUI } from './PredictionUI';
 import { WalletConnect } from './components/WalletConnect';
+import { GameContractUI } from './components/GameContractUI';
 import { useWallet } from './context/WalletProvider';
+import { Hen } from './services/ContractService';
 
 function App() {
     // References to the PhaserGame component (game and scene are exposed)
@@ -71,6 +73,14 @@ function App() {
                         <p>Playing with wallet: {walletAddress.substring(0, 6)}...{walletAddress.substring(walletAddress.length - 4)}</p>
                     </div>
                 )}
+                
+                {/* Contract integration UI */}
+                <GameContractUI onBetPlaced={(hen) => {
+                    // When a bet is placed through the contract, update the prediction
+                    const prediction = hen === Hen.A ? 'A' : 'B';
+                    setUserPrediction(prediction);
+                    EventBus.emit('prediction-made', { prediction });
+                }} />
                 
                 {roundInfo && (
                     <div className="round-results">
