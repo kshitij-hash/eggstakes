@@ -3,10 +3,7 @@ import { ChickenType } from './Chicken';
 
 export class Egg extends Phaser.Physics.Arcade.Sprite {
     private readonly chickenType: ChickenType;
-    private readonly fallSpeed: number;
     private readonly canvasWidth: number;
-    private readonly minFallSpeed = 100;
-    private readonly maxFallSpeed = 300;
     private wiggleTimer: Phaser.Time.TimerEvent;
     private wiggleDirection: number = 1;
     
@@ -16,16 +13,16 @@ export class Egg extends Phaser.Physics.Arcade.Sprite {
         this.chickenType = type;
         this.canvasWidth = canvasWidth;
         
-        // Randomize fall speed within a range
-        this.fallSpeed = Phaser.Math.Between(this.minFallSpeed, this.maxFallSpeed);
-        
         // Add sprite to scene
         scene.add.existing(this);
         scene.physics.add.existing(this);
         
-        // Set falling velocity
-        this.setVelocityY(this.fallSpeed);
-        
+        // Set the body to be a circle, which is more egg-like for collisions
+        this.setCircle(this.width / 2);
+
+        // Allow the egg to bounce a little
+        this.setBounce(0.2);
+
         // Scale the egg sprite if needed
         this.setScale(0.8);
         
